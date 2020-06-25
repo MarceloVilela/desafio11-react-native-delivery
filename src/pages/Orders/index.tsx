@@ -3,6 +3,7 @@ import { Image } from 'react-native';
 
 import api from '../../services/api';
 import formatValue from '../../utils/formatValue';
+import orderTotal from '../../utils/orderTotal';
 
 import {
   Container,
@@ -27,12 +28,36 @@ interface Food {
   thumbnail_url: string;
 }
 
+interface Extra {
+  id: number;
+  name: string;
+  value: number;
+  quantity: number;
+}
+
+interface Order extends Food {
+  quantity?: number;
+  extras: Extra[];
+}
+
 const Orders: React.FC = () => {
-  const [orders, setOrders] = useState<Food[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     async function loadOrders(): Promise<void> {
-      // Load orders from API
+      const response = await api.get<Order[]>('/orders');
+
+      const ordersFormatted = response.data.map(item => {
+        const { price, quantity, extras } = item;
+        const value = orderTotal({ price, quantity, extras });
+
+        return {
+          ...item,
+          formattedPrice: formatValue(value),
+        };
+      });
+
+      setOrders(ordersFormatted);
     }
 
     loadOrders();
